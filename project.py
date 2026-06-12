@@ -37,7 +37,7 @@ y_B = tenant_B["default.payment.next.month"]
 
 
 # Każdy oddział trenuje swój model osobno na swoich danych. Skalujemy dane żeby model działał poprawnie. Na końcu oddział zwraca tylko wagi — nie dane klientów
-def trenuj_lokalnie(X, y):
+def trenuj_lokalnie(X, y, noise_level):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)  # skaluje dane do podobnego zakresu
 
@@ -46,12 +46,22 @@ def trenuj_lokalnie(X, y):
     
     wagi = model.coef_        # wagi dla każdej z 23 kolumn. Mówią jak bardzo dana cecha (np. wiek, limit) wpływa na wynik
     bias = model.intercept_   #  bias, czyli punkt startowy modelu niezależny od danych
+
+    # Dodanie szumu do wag przed wysłaniem do centrali
+    szum_wagi = np.random.normal(0, noise_level, wagi.shape)
+    szum_bias = np.random.normal(0, noise_level, bias.shape)
     
-    return wagi, bias
+    wagi_z_szumem = wagi + szum_wagi
+    bias_z_szumem = bias + szum_bias
+    
+    return wagi_z_szumem, bias_z_szumem
+
+
+noise_level = 0.0
 
 # Trenowanie każdego oddziału osobno
-wagi_A, bias_A = trenuj_lokalnie(X_A, y_A)
-wagi_B, bias_B = trenuj_lokalnie(X_B, y_B)
+wagi_A, bias_A = trenuj_lokalnie(X_A, y_A, noise_level)
+wagi_B, bias_B = trenuj_lokalnie(X_B, y_B, noise_level)
 
 print("Wagi oddziału A:", wagi_A)
 print("Bias oddziału A:", bias_A)
@@ -80,3 +90,5 @@ model_globalny.classes_ = np.array([0, 1]) # mówimy modelowi jakie są możliwe
 print("Wagi globalne:", wagi_globalne)
 print("Bias globalny:", bias_globalny)
 print("Model globalny gotowy!")
+
+
