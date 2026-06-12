@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+import matplotlib.pyplot as plt
 
 #uruchomienie -> w terminalu: python project.py
 
@@ -92,3 +94,46 @@ print("Bias globalny:", bias_globalny)
 print("Model globalny gotowy!")
 
 
+
+
+
+
+# Zbiór testowy — osobne dane do oceny modelu
+X_all = df.drop(columns=["default.payment.next.month"])
+y_all = df["default.payment.next.month"]
+
+scaler_testowy = StandardScaler()
+X_all_scaled = scaler_testowy.fit_transform(X_all)
+
+_, X_test, _, y_test = train_test_split(X_all_scaled, y_all, test_size=0.2, random_state=42)
+
+# Pętla eksperymentalna
+noise_levels = [0.0, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0]
+dokladnosci = []
+
+for noise in noise_levels:
+    wagi_A, bias_A = trenuj_lokalnie(X_A, y_A, noise)
+    wagi_B, bias_B = trenuj_lokalnie(X_B, y_B, noise)
+    
+    wagi_glob, bias_glob = fedavg(wagi_A, bias_A, wagi_B, bias_B)
+    
+    model = LogisticRegression()
+    model.coef_ = wagi_glob
+    model.intercept_ = bias_glob
+    model.classes_ = np.array([0, 1])
+    
+    y_pred = model.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    dokladnosci.append(acc)
+    print(f"noise_level={noise:.2f} → Dokładność: {acc*100:.1f}%")
+
+# Wykres
+plt.figure(figsize=(10, 6))
+plt.plot(noise_levels, dokladnosci, marker="o", color="black", linewidth=2)
+plt.title("Cena Prywatności — Trade-off szum vs dokładność")
+plt.xlabel("Poziom szumu (noise_level)")
+plt.ylabel("Dokładność modelu globalnego")
+plt.grid(True)
+plt.savefig("wykres.png")
+plt.show()
+print("Wykres zapisany jako wykres.png")
