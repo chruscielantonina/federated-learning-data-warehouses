@@ -7,8 +7,6 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# Install: pip install -r requirements.txt
-# Run (from the repository root): python src/federated_learning.py
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_PATH = ROOT / "data" / "UCI_Credit_Card.csv"
